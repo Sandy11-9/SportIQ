@@ -1,0 +1,134 @@
+<div class="analyze-layout">
+  <section class="form-card">
+    <h2>New analysis</h2>
+    <p class="hint">Upload a video clip of your technique.</p>
+
+    <p class="hint">
+      Need a refresher on how to record?
+      <a routerLink="/rules">See the recording guidelines →</a>
+    </p>
+
+    @if (error(); as message) {
+      <p class="form-error">{{ message }}</p>
+    }
+
+    @if (sportsError()) {
+      <p class="form-error">
+        Could not load sports.
+        <button type="button" class="retry-button" (click)="loadSports()">Retry</button>
+      </p>
+    }
+
+    <label>
+      Sport
+      <select
+        (change)="onSportChange($any($event.target).value)"
+        [value]="selectedSportId() ?? ''"
+      >
+        <option value="" disabled selected>Choose a sport</option>
+        @for (sport of sports(); track sport.id) {
+          <option [value]="sport.id">{{ sport.name }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      Skill
+      <select
+        (change)="onSkillChange($any($event.target).value)"
+        [value]="selectedSkillId() ?? ''"
+        [disabled]="selectedSportId() === null || skills().length === 0"
+      >
+        <option value="" disabled selected>Choose a skill</option>
+        @for (skill of skills(); track skill.id) {
+          <option [value]="skill.id">{{ skill.name }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="file-label">
+      Video
+      <input
+        type="file"
+        accept="video/mp4,video/quicktime,video/x-m4v,video/webm,video/x-matroska,.mp4,.m4v,.mov,.webm,.mkv"
+        (change)="onFileSelected($event)"
+      />
+    </label>
+
+    @if (file(); as chosen) {
+      <p class="file-chosen">{{ chosen.name }}</p>
+    } @else if (selectedSportId() === null || selectedSkillId() === null) {
+      <p class="hint">Pick a sport and a skill first, then choose your video.</p>
+    }
+
+    @if (ready) {
+      <p class="ready">Ready to analyze.</p>
+    }
+
+    <button type="button" (click)="submit()" [disabled]="loading()">
+      Analyze
+    </button>
+
+    @if (loading()) {
+      <div class="analyzing" role="status">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Analyzing your technique…</span>
+      </div>
+    }
+  </section>
+
+  @if (result(); as session) {
+    <section class="result-card">
+      <div class="result-head">
+        <h2>{{ session.sportName }} — {{ session.skillName }}</h2>
+        <p class="hint">Analyzed at {{ session.analyzedAt | date: 'medium' }}</p>
+      </div>
+
+      @if (session.scores.length >= 3) {
+        <div class="chart-wrap">
+          <app-score-chart [scores]="session.scores" />
+        </div>
+      }
+
+      <div class="scores">
+        @for (score of session.scores; track score.category) {
+          <div class="score-row">
+            <span class="score-label">{{ score.category }}</span>
+            <div class="score-bar">
+              <div class="score-fill" [style.width.%]="score.score"></div>
+            </div>
+            <span class="score-value">{{ score.score }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="points">
+        <div>
+          <h3>What went well</h3>
+          <ul>
+            @for (point of session.goodPoints; track point) {
+              <li>{{ point }}</li>
+            }
+          </ul>
+        </div>
+        <div>
+          <h3>What to improve</h3>
+          <ul>
+            @for (point of session.badPoints; track point) {
+              <li>{{ point }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="drill-section">
+        <h3>Suggested drills</h3>
+        <ul>
+          @for (point of session.improvements; track point) {
+            <li>{{ point }}</li>
+          }
+        </ul>
+      </div>
+    </section>
+  }
+</div>

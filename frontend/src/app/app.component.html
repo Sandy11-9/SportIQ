@@ -1,0 +1,37 @@
+<header class="topbar">
+  <a routerLink="/" class="brand">
+    <span class="brand-mark">IQ</span>
+    <span>Sport<span class="brand-accent">IQ</span></span>
+  </a>
+
+  <nav class="nav">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+    @if (authed$ | async) {
+      <a routerLink="/analyze" routerLinkActive="active">Analyze</a>
+      <a routerLink="/history" routerLinkActive="active">History</a>
+      <a routerLink="/bmi" routerLinkActive="active">BMI</a>
+      <a routerLink="/calories" routerLinkActive="active">Calories</a>
+      <a routerLink="/profile" routerLinkActive="active">Profile</a>
+    } @else {
+      <a routerLink="/analyze" routerLinkActive="active">Analyze</a>
+    }
+  </nav>
+
+  <div class="actions">
+    <button type="button" class="theme-toggle" (click)="toggleTheme()" [attr.aria-label]="dark ? 'Switch to light mode' : 'Switch to dark mode'">
+      {{ dark ? '☀' : '☾' }}
+    </button>
+    @if (authed$ | async) {
+      <button type="button" class="logout" (click)="logout()">Log out</button>
+    } @else {
+      <a routerLink="/login" class="nav-link">Log in</a>
+      <a routerLink="/register" class="nav-link primary">Sign up</a>
+    }
+  </div>
+</header>
+<main class="page">
+  <router-outlet />
+</main>
+@if (authed$ | async) {
+  <app-chatbot />
+}

@@ -1,0 +1,173 @@
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f8f7;
+  --bg-elevated: #ffffff;
+  --bg-inset: #eef2f0;
+  --text: #16221b;
+  --text-muted: #5c6b62;
+  --border: #dde5df;
+  --primary: #16a34a;
+  --primary-strong: #15803d;
+  --primary-soft: #dcfce7;
+  --accent: #0ea5e9;
+  --accent-soft: #e0f2fe;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --warning: #d97706;
+  --warning-soft: #fef3c7;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 8px 28px rgb(22 34 27 / 0.08);
+  --shadow-lg: 0 18px 48px rgb(22 34 27 / 0.14);
+  --bg-veil: rgb(246 248 247 / 0.85);
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html[data-theme="dark"] {
+  --bg: #0d1410;
+  --bg-elevated: #16211a;
+  --bg-inset: #1d2a22;
+  --text: #e8f0ea;
+  --text-muted: #9db1a5;
+  --border: #2a3a30;
+  --primary: #22c55e;
+  --primary-strong: #4ade80;
+  --primary-soft: #14351f;
+  --accent: #38bdf8;
+  --accent-soft: #123047;
+  --danger: #f87171;
+  --danger-soft: #431512;
+  --warning: #fbbf24;
+  --warning-soft: #3f3008;
+  --shadow: 0 8px 28px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.5);
+  --bg-veil: rgb(13 20 16 / 0.82);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font);
+  background:
+    linear-gradient(var(--bg-veil), var(--bg-veil)),
+    url("/images/cricket.jpg") left center / auto 100% no-repeat fixed,
+    url("/images/football.jpg") right center / auto 100% no-repeat fixed,
+    radial-gradient(1200px 600px at 80% -10%, var(--primary-soft) 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 20%, var(--accent-soft) 0%, transparent 55%),
+    var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1.15rem;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease, opacity 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--primary-strong);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+input,
+select {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.form-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1.25rem;
+}

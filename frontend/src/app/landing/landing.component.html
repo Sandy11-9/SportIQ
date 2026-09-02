@@ -1,0 +1,90 @@
+<section class="hero">
+  <div class="hero-badge">AI-powered sports coaching</div>
+  <h1>Train your technique like a pro, from your own video.</h1>
+  <p class="hero-sub">
+    SportIQ analyzes your cricket and football clips frame by frame with on-device
+    AI models, scores your fundamentals, and hands you a personal coaching plan.
+  </p>
+
+  @if (authed$ | async) {
+    <div class="hero-actions">
+      <a routerLink="/analyze" class="cta primary">Analyze a video</a>
+      <a routerLink="/history" class="cta ghost">View my history</a>
+    </div>
+  } @else {
+    <div class="hero-actions">
+      <a routerLink="/register" class="cta primary">Get started free</a>
+      <a routerLink="/login" class="cta ghost">Log in</a>
+    </div>
+  }
+</section>
+
+<section class="features">
+  <h2>Everything an athlete needs</h2>
+  <p class="section-sub">Five tools in one app, built for the training ground.</p>
+
+  <div class="feature-grid">
+    <article class="feature-card">
+      <span class="feature-icon">🎯</span>
+      <h3>Video Analysis</h3>
+      <p>Upload a clip of your bowling, batting, shooting, passing or dribbling and get scored on the fundamentals.</p>
+      <a routerLink="/analyze">Try analysis →</a>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-icon">📈</span>
+      <h3>Progress History</h3>
+      <p>Every session is saved. Watch your scores trend upward over time and spot weak skills to work on.</p>
+      <a routerLink="/history">See history →</a>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-icon">💬</span>
+      <h3>SportIQ Assistant</h3>
+      <p>Stuck on a drill or a technique question? Ask our sports-only assistant for instant, practical advice.</p>
+      <a routerLink="/analyze">Open the assistant →</a>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-icon">⚖️</span>
+      <h3>BMI Calculator</h3>
+      <p>Know where you stand. A quick body-mass-index check to keep your training on target.</p>
+      <a routerLink="/bmi">Calculate BMI →</a>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-icon">🔥</span>
+      <h3>Calorie Calculator</h3>
+      <p>Estimate your daily calorie needs and daily burn for your training load.</p>
+      <a routerLink="/calories">Estimate calories →</a>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-icon">📋</span>
+      <h3>Rules Reference</h3>
+      <p>Coaching checklists for every supported skill so you know exactly what the AI is looking for.</p>
+      <a routerLink="/rules">View the rules →</a>
+    </article>
+  </div>
+</section>
+
+<section class="how">
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step">
+      <span class="step-num">1</span>
+      <h4>Record a clip</h4>
+      <p>Film your technique from a clear angle, 5–20 seconds is all we need.</p>
+    </div>
+    <div class="step">
+      <span class="step-num">2</span>
+      <h4>AI reads every frame</h4>
+      <p>moondream describes your body position frame by frame — at 1.5 frames per second.</p>
+    </div>
+    <div class="step">
+      <span class="step-num">3</span>
+      <h4>Get coached</h4>
+      <p>phi4-mini turns it into 0–100 scores, what went well, and drills to fix the rest.</p>
+    </div>
+  </div>
+</section>

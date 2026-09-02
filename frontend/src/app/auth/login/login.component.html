@@ -1,0 +1,39 @@
+<div class="auth-card">
+  <h2>Log in</h2>
+
+  @if (verified()) {
+    <p class="form-success">Email verified! You can log in now.</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Email
+      <input formControlName="email" type="email" autocomplete="email" />
+    </label>
+    @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+      <span class="field-error">Email is required.</span>
+    }
+    @if (form.controls.email.touched && form.controls.email.hasError('email')) {
+      <span class="field-error">Enter a valid email.</span>
+    }
+
+    <label>
+      Password
+      <input formControlName="password" type="password" autocomplete="current-password" />
+    </label>
+    @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+      <span class="field-error">Password is required.</span>
+    }
+
+    @if (error(); as message) {
+      <p class="form-error">{{ message }}</p>
+    }
+
+    <button type="submit" [disabled]="form.invalid || submitting()">
+      {{ submitting() ? 'Logging in…' : 'Log in' }}
+    </button>
+  </form>
+  <p class="auth-link">
+    New here? <a routerLink="/register">Create an account</a>
+  </p>
+</div>

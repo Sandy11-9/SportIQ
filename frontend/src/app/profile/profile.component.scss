@@ -1,0 +1,48 @@
+.profile-card {
+  max-width: 480px;
+  background: #ffffff;
+  border: 1px solid #e4e6eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.profile-card h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+}
+
+dl {
+  margin: 0;
+}
+
+dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+dl > div:last-child {
+  border-bottom: none;
+}
+
+dt {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.form-error {
+  color: #b3261e;
+  font-size: 0.875rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}

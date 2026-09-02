@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sportiq
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sportiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+  ollama-setup:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    command: >
+      sh -c "
+      until ollama list > /dev/null 2>&1; do sleep 2; done &&
+      ollama pull moondream &&
+      ollama pull phi4-mini &&
+      echo MODELS_READY
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama-setup:
+        condition: service_completed_successfully
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  ollama-models:
+  uploads:

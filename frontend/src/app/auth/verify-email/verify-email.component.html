@@ -1,0 +1,48 @@
+<div class="auth-card">
+  <h2>Verify your email</h2>
+  <p class="hint">
+    We sent a 6-digit code to <strong>{{ email() }}</strong>. Enter it below to activate your account.
+  </p>
+
+  @if (notice(); as message) {
+    <p class="form-notice">{{ message }}</p>
+  }
+  @if (error(); as message) {
+    <p class="form-error">{{ message }}</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Verification code
+      <input
+        formControlName="otp"
+        type="text"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        maxlength="6"
+        placeholder="123456"
+      />
+    </label>
+    @if (form.controls.otp.touched && form.controls.otp.hasError('required')) {
+      <span class="field-error">Enter the code from your email.</span>
+    }
+    @if (form.controls.otp.touched && form.controls.otp.hasError('pattern')) {
+      <span class="field-error">The code is 6 digits long.</span>
+    }
+
+    <button type="submit" [disabled]="form.invalid || submitting()">
+      {{ submitting() ? 'Verifying…' : 'Verify email' }}
+    </button>
+  </form>
+
+  <p class="auth-link">
+    Didn't get it?
+    <button type="button" class="link-button" (click)="resend()" [disabled]="resending()">
+      {{ resending() ? 'Sending…' : 'Send a new code' }}
+    </button>
+  </p>
+
+  <p class="auth-link">
+    <a routerLink="/register">Back to registration</a>
+  </p>
+</div>

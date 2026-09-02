@@ -1,0 +1,18 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+
+sportiq:
+  jwt:
+    secret: sportiq-test-secret-key-that-is-long-enough-for-hs256
+    expiration-ms: 86400000
+  ai:
+    vision-model: moondream
+    reasoning-model: phi4-mini
+  ffmpeg:
+    binary: ffmpeg
+    ffprobe-binary: ffprobe

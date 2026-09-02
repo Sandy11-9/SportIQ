@@ -1,0 +1,99 @@
+<div class="history">
+  <h2>Analysis history</h2>
+
+  <div class="filters">
+    <label>
+      Sport
+      <select (change)="onSportFilter($any($event.target).value)" [value]="filterSportId() ?? ''">
+        <option value="">All sports</option>
+        @for (sport of sports(); track sport.id) {
+          <option [value]="sport.id">{{ sport.name }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      Skill
+      <select (change)="onSkillFilter($any($event.target).value)" [value]="filterSkillId() ?? ''">
+        <option value="">All skills</option>
+        @for (skill of skills(); track skill.id) {
+          <option [value]="skill.id">{{ skill.name }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (error(); as message) {
+    <p class="form-error">{{ message }}</p>
+  }
+
+  @if (sessions().length > 1) {
+    <section class="card trend-card">
+      <h3>Average score trend</h3>
+      <app-trend-chart [points]="trendPoints()" />
+    </section>
+  }
+
+  @if (sessions().length === 0) {
+    <p class="empty">No analyses yet. Run your first one on the Analyze page.</p>
+  }
+
+  <div class="session-list">
+    @for (session of sessions(); track session.id) {
+      <article class="session-card" (click)="toggleDetail(session.id)">
+        <div class="session-head">
+          <div>
+            <strong>{{ session.sportName }} — {{ session.skillName }}</strong>
+            <span class="muted">{{ session.analyzedAt | date: 'medium' }}</span>
+          </div>
+          <span class="avg-score">{{ averageScore(session) }}</span>
+        </div>
+
+        @if (expandedId() === session.id) {
+          <div class="session-detail">
+            <div class="score-row">
+              @for (score of session.scores; track score.category) {
+                <span class="score-chip">
+                  <span class="score-chip-label">{{ score.category }}</span>
+                  <span class="score-chip-value">{{ score.score }}</span>
+                </span>
+              }
+            </div>
+
+            <div class="points">
+              <div>
+                <h4>Good</h4>
+                <ul>
+                  @for (point of session.goodPoints; track point) {
+                    <li>{{ point }}</li>
+                  }
+                </ul>
+              </div>
+              <div>
+                <h4>To improve</h4>
+                <ul>
+                  @for (point of session.badPoints; track point) {
+                    <li>{{ point }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+
+            <h4>Suggested drills</h4>
+            <ul>
+              @for (point of session.improvements; track point) {
+                <li>{{ point }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </article>
+    }
+  </div>
+
+  <div class="pagination">
+    <button type="button" (click)="prev()" [disabled]="page() === 0">Previous</button>
+    <span>Page {{ page() + 1 }} of {{ Math.max(totalPages(), 1) }}</span>
+    <button type="button" (click)="next()" [disabled]="page() >= totalPages() - 1">Next</button>
+  </div>
+</div>

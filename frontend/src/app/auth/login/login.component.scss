@@ -1,0 +1,32 @@
+.auth-card {
+  max-width: 400px;
+  margin: 3rem auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.auth-link {
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 1.25rem;
+  color: var(--text-muted);
+}
+
+.form-success {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}

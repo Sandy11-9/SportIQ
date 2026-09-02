@@ -1,0 +1,100 @@
+<section class="calc-layout">
+  <div class="card">
+    <h2>Calorie Calculator</h2>
+    <p class="hint">
+      Estimates your daily maintenance calories using the Mifflin–St Jeor equation, scaled to your training load.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="calculate()">
+      <label>
+        Gender
+        <select formControlName="gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </label>
+
+      <label>
+        Age
+        <input formControlName="age" type="number" min="10" max="100" />
+      </label>
+      @if (form.controls.age.touched && form.controls.age.invalid) {
+        <span class="field-error">Enter an age between 10 and 100.</span>
+      }
+
+      <label>
+        Height (cm)
+        <input formControlName="heightCm" type="number" min="80" max="250" />
+      </label>
+
+      <label>
+        Weight (kg)
+        <input formControlName="weightKg" type="number" min="25" max="300" />
+      </label>
+
+      <label>
+        Activity level
+        <select formControlName="activity">
+          @for (level of levels; track level.factor) {
+            <option [value]="level.factor">{{ level.label }}</option>
+          }
+        </select>
+      </label>
+
+      <button type="submit" [disabled]="form.invalid">Calculate calories</button>
+    </form>
+  </div>
+
+  @if (result(); as r) {
+    <div class="card result-card">
+      <h2>Your estimates</h2>
+      <div class="metric">
+        <span class="metric-label">Resting burn (BMR)</span>
+        <span class="metric-value">{{ r.bmr | number }} kcal</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Daily maintenance</span>
+        <span class="metric-value accent">{{ r.tdee | number }} kcal</span>
+      </div>
+      <p class="hint">
+        Eat near your maintenance to hold weight, below it to lose, above it to gain lean mass.
+      </p>
+    </div>
+
+    @if (adviceError(); as message) {
+      <p class="form-error">{{ message }}</p>
+    }
+
+    @if (advice(); as a) {
+      <div class="card advice-card">
+        <h2>Your AI diet plan</h2>
+        <p>{{ a.summary }}</p>
+
+        <h3>Food tips</h3>
+        <ul>
+          @for (tip of a.foodTips; track tip) {
+            <li>{{ tip }}</li>
+          }
+        </ul>
+
+        <h3>Sample meal plan</h3>
+        <ul>
+          @for (meal of a.mealPlan; track meal) {
+            <li>{{ meal }}</li>
+          }
+        </ul>
+
+        <h3>Lifestyle tips</h3>
+        <ul>
+          @for (tip of a.lifestyleTips; track tip) {
+            <li>{{ tip }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    <button type="button" class="ai-btn" (click)="getDietPlan()" [disabled]="adviceLoading()">
+      {{ adviceLoading() ? 'Generating…' : advice() ? 'Regenerate AI diet plan' : 'Get AI diet plan' }}
+    </button>
+  }
+</section>

@@ -1,0 +1,85 @@
+.calc-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.result-card {
+  text-align: center;
+}
+
+.bmi-big {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bmi-category {
+  display: inline-block;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.3rem 1rem;
+  margin: 0.75rem 0 1.5rem;
+}
+
+.scale {
+  margin: 1rem 0;
+}
+
+.scale-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0ea5e9 0%, #16a34a 30%, #d97706 65%, #dc2626 100%);
+}
+
+.scale-marker {
+  position: absolute;
+  top: -5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 3px solid var(--text);
+  transform: translateX(-50%);
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+}
+
+.ai-btn {
+  margin-top: 1.25rem;
+  width: 100%;
+}
+
+.advice-card {
+  text-align: left;
+}
+
+.advice-card h3 {
+  margin-top: 1rem;
+  color: var(--text);
+}
+
+.advice-card ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--text);
+}
+
+.advice-card li {
+  margin-bottom: 0.35rem;
+}
+
+@media (max-width: 760px) {
+  .calc-layout {
+    grid-template-columns: 1fr;
+  }
+}

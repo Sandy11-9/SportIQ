@@ -1,0 +1,48 @@
+<div class="auth-card">
+  <h2>Create your account</h2>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Full name
+      <input formControlName="fullName" type="text" autocomplete="name" />
+    </label>
+    @if (form.controls.fullName.touched && form.controls.fullName.hasError('required')) {
+      <span class="field-error">Full name is required.</span>
+    }
+
+    <label>
+      Email
+      <input formControlName="email" type="email" autocomplete="email" />
+    </label>
+    @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+      <span class="field-error">Email is required.</span>
+    }
+    @if (form.controls.email.touched && form.controls.email.hasError('email')) {
+      <span class="field-error">Enter a valid email.</span>
+    }
+
+    <label>
+      Password
+      <input formControlName="password" type="password" autocomplete="new-password" />
+    </label>
+    @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+      <span class="field-error">Password is required.</span>
+    }
+    @if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
+      <span class="field-error">Password must be at least 8 characters.</span>
+    }
+
+    @if (error(); as message) {
+      <p class="form-error">{{ message }}</p>
+    }
+
+    <button type="submit" [disabled]="form.invalid || submitting()">
+      {{ submitting() ? 'Creating account…' : 'Create account' }}
+    </button>
+  </form>
+  <p class="hint verify-hint">
+    After you create your account, we'll email you a 6-digit code to verify your address before you can log in.
+  </p>
+  <p class="auth-link">
+    Already have an account? <a routerLink="/login">Log in</a>
+  </p>
+</div>

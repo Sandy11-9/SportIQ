@@ -1,0 +1,21 @@
+<svg
+  [attr.viewBox]="'0 0 ' + size + ' ' + size"
+  class="radar"
+  role="img"
+  aria-label="Technique scores radar chart"
+>
+  @for (ring of grid(); track ring.label) {
+    <polygon [attr.points]="ring.points" class="ring" />
+  }
+  @for (axis of axes(); track $index) {
+    <line [attr.x1]="axis.x1" [attr.y1]="axis.y1" [attr.x2]="axis.x2" [attr.y2]="axis.y2" class="axis" />
+  }
+  <polygon [attr.points]="points()" class="fill" />
+  <polygon [attr.points]="points()" class="stroke" />
+  @for (dot of dots(); track $index) {
+    <circle [attr.cx]="dot.cx" [attr.cy]="dot.cy" r="4" class="dot" />
+  }
+  @for (label of labels(); track label.text) {
+    <text [attr.x]="label.x" [attr.y]="label.y" [attr.text-anchor]="label.anchor" class="label">{{ label.text }}</text>
+  }
+</svg>

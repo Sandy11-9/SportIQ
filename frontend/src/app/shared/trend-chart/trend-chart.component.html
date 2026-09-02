@@ -1,0 +1,31 @@
+@if (plotted(); as plot) {
+  <svg
+    [attr.viewBox]="'0 0 ' + width + ' ' + height"
+    class="trend"
+    role="img"
+    aria-label="Score trend over time"
+  >
+    @for (line of gridLines(); track line.label) {
+      <line
+        [attr.x1]="padX"
+        [attr.y1]="line.y"
+        [attr.x2]="width - padX"
+        [attr.y2]="line.y"
+        class="grid"
+      />
+      <text [attr.x]="2" [attr.y]="line.y + 4" class="tick">{{ line.label }}</text>
+    }
+
+    <polygon [attr.points]="plot.area" class="area" />
+    <polyline [attr.points]="plot.line" class="stroke" />
+
+    @for (point of plot.coords; track $index) {
+      <circle [attr.cx]="point.x" [attr.cy]="point.y" r="4" class="dot" />
+      <text [attr.x]="point.x" [attr.y]="height - 6" class="xlabel" text-anchor="middle">
+        {{ point.label }}
+      </text>
+    }
+  </svg>
+} @else {
+  <p class="hint">Add at least two analyses to see your trend line.</p>
+}

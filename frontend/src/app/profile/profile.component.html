@@ -1,0 +1,24 @@
+<div class="profile-card">
+  <h2>Profile</h2>
+
+  @if (error(); as message) {
+    <p class="form-error">{{ message }}</p>
+  }
+
+  @if (user(); as user) {
+    <dl>
+      <div>
+        <dt>Name</dt>
+        <dd>{{ user.fullName }}</dd>
+      </div>
+      <div>
+        <dt>Email</dt>
+        <dd>{{ user.email }}</dd>
+      </div>
+      <div>
+        <dt>Analyses</dt>
+        <dd>{{ totalAnalyses() ?? '…' }}</dd>
+      </div>
+    </dl>
+  }
+</div>

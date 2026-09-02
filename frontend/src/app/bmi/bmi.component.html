@@ -1,0 +1,88 @@
+<section class="calc-layout">
+  <div class="card">
+    <h2>BMI Calculator</h2>
+    <p class="hint">Body Mass Index is a quick screen for weight categories. It's a starting point, not a diagnosis.</p>
+
+    <form [formGroup]="form" (ngSubmit)="calculate()">
+      <label>
+        Height (cm)
+        <input formControlName="heightCm" type="number" min="80" max="250" />
+      </label>
+      @if (form.controls.heightCm.touched && form.controls.heightCm.invalid) {
+        <span class="field-error">Enter a height between 80 and 250 cm.</span>
+      }
+
+      <label>
+        Weight (kg)
+        <input formControlName="weightKg" type="number" min="25" max="300" />
+      </label>
+      @if (form.controls.weightKg.touched && form.controls.weightKg.invalid) {
+        <span class="field-error">Enter a weight between 25 and 300 kg.</span>
+      }
+
+      <button type="submit" [disabled]="form.invalid">Calculate BMI</button>
+    </form>
+  </div>
+
+  @if (result(); as r) {
+    <div class="card result-card">
+      <h2>Your result</h2>
+      <div class="bmi-big" [style.color]="r.color">
+        {{ r.bmi }}
+      </div>
+      <div class="bmi-category" [style.background]="r.color">
+        {{ r.category }}
+      </div>
+      <div class="scale">
+        <div class="scale-track">
+          <div class="scale-marker" [style.left.%]="scalePosition(r.bmi)"></div>
+        </div>
+        <div class="scale-labels">
+          <span>Underweight</span>
+          <span>Healthy</span>
+          <span>Overweight</span>
+          <span>Obese</span>
+        </div>
+      </div>
+      <p class="hint">
+        BMI ranges (adults): under 18.5 underweight · 18.5–24.9 healthy · 25–29.9 overweight · 30+ obese.
+      </p>
+    </div>
+
+    @if (adviceError(); as message) {
+      <p class="form-error">{{ message }}</p>
+    }
+
+    @if (advice(); as a) {
+      <div class="card advice-card">
+        <h2>Your AI diet plan</h2>
+        <p>{{ a.summary }}</p>
+
+        <h3>Food tips</h3>
+        <ul>
+          @for (tip of a.foodTips; track tip) {
+            <li>{{ tip }}</li>
+          }
+        </ul>
+
+        <h3>Sample meal plan</h3>
+        <ul>
+          @for (meal of a.mealPlan; track meal) {
+            <li>{{ meal }}</li>
+          }
+        </ul>
+
+        <h3>Lifestyle tips</h3>
+        <ul>
+          @for (tip of a.lifestyleTips; track tip) {
+            <li>{{ tip }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    <button type="button" class="ai-btn" (click)="getDietPlan()" [disabled]="adviceLoading()">
+      {{ adviceLoading() ? 'Generating…' : advice() ? 'Regenerate AI diet plan' : 'Get AI diet plan' }}
+    </button>
+  }
+</section>

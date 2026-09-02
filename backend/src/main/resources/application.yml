@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: sportiq-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sportiq
+    username: postgres
+    password: postgres
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+  mail:
+    # TODO: replace the placeholders below with real SMTP credentials
+    # (e.g., a Gmail address + its app password) to enable OTP emails.
+    host: smtp.gmail.com
+    port: 587
+    username: sportiq.ai@gmail.com
+    password: hswr jmbb yxnq sykp
+    from: sportiq.ai@gmail.com
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8080
+
+sportiq:
+  jwt:
+    # Dev-only default for the local college demo. Override via env
+    # (SPORTIQ_JWT_SECRET) in real deployments. Must be >= 32 chars, HS256.
+    secret: sportiq-local-demo-secret-key-change-me-0123456789abcdefwkajhsdjsdhaskdh
+    expiration-ms: 86400000
+  ai:
+    vision-model: moondream
+    reasoning-model: phi4-mini
+    chat-timeout-ms: 60000
+    budget-ms: 600000
+  otp:
+    length: 6
+    ttl-seconds: 600
+    resend-cooldown-seconds: 30
+  media:
+    temp-dir: uploads
+    temp-max-age-hours: 1
+    min-duration-seconds: 5
+    max-duration-seconds: 20
+    frames-per-second: 1.5
+    max-file-size-bytes: 52428800
+    allowed-content-types: video/mp4, video/quicktime, video/x-m4v, video/webm, video/x-matroska
+  ffmpeg:
+    binary: ffmpeg
+    ffprobe-binary: ffprobe
