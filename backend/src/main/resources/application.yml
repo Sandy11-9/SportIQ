@@ -17,13 +17,12 @@ spring:
     ollama:
       base-url: http://localhost:11434
   mail:
-    # TODO: replace the placeholders below with real SMTP credentials
-    # (e.g., a Gmail address + its app password) to enable OTP emails.
+    # Set credentials through environment variables; never commit real secrets.
     host: smtp.gmail.com
     port: 587
-    username: sportiq.ai@gmail.com
-    password: hswr jmbb yxnq sykp
-    from: sportiq.ai@gmail.com
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    from: ${SPRING_MAIL_FROM:noreply@localhost}
     properties:
       mail:
         smtp:
@@ -36,9 +35,8 @@ server:
 
 sportiq:
   jwt:
-    # Dev-only default for the local college demo. Override via env
-    # (SPORTIQ_JWT_SECRET) in real deployments. Must be >= 32 chars, HS256.
-    secret: sportiq-local-demo-secret-key-change-me-0123456789abcdefwkajhsdjsdhaskdh
+    # Required outside tests. Generate a strong secret and provide SPORTIQ_JWT_SECRET.
+    secret: ${SPORTIQ_JWT_SECRET:}
     expiration-ms: 86400000
   ai:
     vision-model: moondream
