@@ -1,0 +1,325 @@
+name: Full E2E - Real Ollama and SMTP
+
+on:
+  workflow_dispatch:
+    inputs:
+      send_external_smtp_probe:
+        description: "Send a separate SMTP probe using configured GitHub Actions secrets"
+        type: boolean
+        required: false
+        default: false
+      external_test_recipient:
+        description: "Inbox to receive the optional SMTP probe (must be an inbox you control)"
+        type: string
+        required: false
+  push:
+    branches:
+      - full-e2e-validation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sportiq-full-e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-model-and-mailpit:
+    name: Real Ollama analysis + SMTP-delivered OTP
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # Test-only secret; never copy it to a real deployment.
+      SPORTIQ_JWT_SECRET: sportiq-full-e2e-ci-only-not-for-deployment-0123456789
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_FROM: sportiq-e2e@localhost
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq ffmpeg
+
+      - name: Run real video analysis and verify OTP email through SMTP
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          compose=(docker compose -f docker-compose.yml -f docker-compose.e2e.yml)
+          cleanup() {
+            echo "::group::Final container status"
+            "${compose[@]}" ps -a || true
+            echo "::endgroup::"
+            echo "::group::Recent service logs"
+            "${compose[@]}" logs --no-color --tail=120 backend frontend postgres ollama ollama-setup mailpit || true
+            echo "::endgroup::"
+            "${compose[@]}" down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+
+          echo "Starting PostgreSQL, Ollama and the test SMTP inbox..."
+          "${compose[@]}" up -d postgres ollama mailpit
+
+          ollama_id="$("${compose[@]}" ps -q ollama)"
+          if [[ -z "$ollama_id" ]]; then
+            echo "Ollama container was not created."
+            exit 1
+          fi
+          for attempt in $(seq 1 120); do
+            health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}starting{{end}}' "$ollama_id")"
+            if [[ "$health" == "healthy" ]]; then
+              break
+            fi
+            if (( attempt % 12 == 0 )); then
+              echo "Waiting for Ollama health check (attempt $attempt/120)..."
+            fi
+            sleep 5
+          done
+          health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$ollama_id")"
+          if [[ "$health" != "healthy" ]]; then
+            echo "Ollama did not become healthy; final health state: $health"
+            exit 1
+          fi
+
+          echo "Downloading both real application models. This can take several minutes..."
+          "${compose[@]}" up -d ollama-setup
+          setup_id="$("${compose[@]}" ps -q ollama-setup)"
+          if [[ -z "$setup_id" ]]; then
+            echo "Ollama model setup container was not created."
+            exit 1
+          fi
+          setup_done=false
+          for attempt in $(seq 1 360); do
+            state="$(docker inspect -f '{{.State.Status}}' "$setup_id")"
+            if [[ "$state" == "exited" ]]; then
+              exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$setup_id")"
+              if [[ "$exit_code" != "0" ]]; then
+                "${compose[@]}" logs --no-color ollama-setup
+                echo "Ollama model download failed with exit code $exit_code."
+                exit 1
+              fi
+              setup_done=true
+              break
+            fi
+            if (( attempt % 12 == 0 )); then
+              echo "Still downloading models (attempt $attempt/360)..."
+              "${compose[@]}" logs --no-color --tail=8 ollama-setup || true
+            fi
+            sleep 10
+          done
+          if [[ "$setup_done" != "true" ]]; then
+            "${compose[@]}" logs --no-color ollama-setup
+            echo "Timed out while downloading Ollama models."
+            exit 1
+          fi
+          "${compose[@]}" exec -T ollama ollama list
+          "${compose[@]}" up --build -d backend frontend
+
+          echo "Waiting for the real backend and frontend..."
+          backend_status=""
+          for attempt in $(seq 1 120); do
+            backend_status="$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/api/sports || true)"
+            if [[ "$backend_status" == "401" ]]; then
+              break
+            fi
+            if (( attempt % 12 == 0 )); then
+              echo "Waiting for Spring Boot (attempt $attempt/120; HTTP $backend_status)..."
+            fi
+            sleep 5
+          done
+          if [[ "$backend_status" != "401" ]]; then
+            "${compose[@]}" logs --no-color --tail=150 backend
+            echo "Backend did not reach the expected protected API response; got HTTP $backend_status."
+            exit 1
+          fi
+          curl --fail --silent --show-error http://localhost:4200/ -o /dev/null
+          curl --fail --silent --show-error http://localhost:8025/api/v1/info -o /dev/null
+
+          echo "Downloading the repository's demo video from the running frontend..."
+          video="$RUNNER_TEMP/sportiq-e2e-demo.mp4"
+          curl --fail --silent --show-error http://localhost:4200/demovideo.mp4 -o "$video"
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video" > "$RUNNER_TEMP/demo-duration.txt"
+          duration="$(cat "$RUNNER_TEMP/demo-duration.txt")"
+          if ! awk -v d="$duration" 'BEGIN { exit !(d >= 5 && d <= 20) }'; then
+            if awk -v d="$duration" 'BEGIN { exit !(d > 20) }'; then
+              ffmpeg -hide_banner -loglevel error -y -i "$video" -t 15 -an -c:v libx264 -pix_fmt yuv420p "$RUNNER_TEMP/sportiq-e2e-trimmed.mp4"
+              video="$RUNNER_TEMP/sportiq-e2e-trimmed.mp4"
+            else
+              echo "Repository demo video is shorter than the application's 5-second minimum ($duration seconds)."
+              exit 1
+            fi
+          fi
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
+
+          echo "Clearing the disposable Mailpit inbox, then registering a test account..."
+          curl --fail --silent --show-error -X DELETE http://localhost:8025/api/v1/messages \
+            -H 'Content-Type: application/json' -d '{"IDs":[]}' -o /dev/null
+          email="sportiq-e2e-${GITHUB_RUN_ID}@example.com"
+          password='SportIQ-CI-Only-Password-9821'
+          jq -n --arg email "$email" --arg password "$password" \
+            '{email:$email,password:$password,fullName:"SportIQ E2E Test"}' > "$RUNNER_TEMP/register-request.json"
+          status="$(curl -sS -o "$RUNNER_TEMP/register-response.json" -w '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            --data @"$RUNNER_TEMP/register-request.json" \
+            http://localhost:8080/api/auth/register)"
+          if [[ "$status" != "201" ]]; then
+            cat "$RUNNER_TEMP/register-response.json"
+            echo "Registration expected HTTP 201, got $status."
+            exit 1
+          fi
+          jq -e '.verified == false' "$RUNNER_TEMP/register-response.json" > /dev/null
+
+          echo "Waiting for the OTP email to arrive at the SMTP test inbox..."
+          message_id=""
+          for attempt in $(seq 1 60); do
+            curl --fail --silent --show-error 'http://localhost:8025/api/v1/messages?start=0&limit=50' \
+              -o "$RUNNER_TEMP/mailpit-messages.json"
+            message_id="$(jq -r --arg email "$email" \
+              '[.messages[]? | select(any(.To[]?; ((.Address // "") | ascii_downcase) == ($email | ascii_downcase)))][0].ID // empty' \
+              "$RUNNER_TEMP/mailpit-messages.json")"
+            if [[ -n "$message_id" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          if [[ -z "$message_id" ]]; then
+            echo "No OTP email reached Mailpit after the registration request."
+            cat "$RUNNER_TEMP/mailpit-messages.json"
+            exit 1
+          fi
+          curl --fail --silent --show-error "http://localhost:8025/api/v1/message/$message_id" \
+            -o "$RUNNER_TEMP/otp-message.json"
+          otp="$(jq -r '.Text // empty' "$RUNNER_TEMP/otp-message.json" | grep -Eo '[0-9]{6}' | head -n 1 || true)"
+          if [[ ! "$otp" =~ ^[0-9]{6}$ ]]; then
+            echo "The received OTP email did not contain a 6-digit verification code."
+            exit 1
+          fi
+
+          echo "Verifying the account using the code received over SMTP..."
+          jq -n --arg email "$email" --arg otp "$otp" '{email:$email,otp:$otp}' > "$RUNNER_TEMP/verify-request.json"
+          status="$(curl -sS -o "$RUNNER_TEMP/verify-response.json" -w '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            --data @"$RUNNER_TEMP/verify-request.json" \
+            http://localhost:8080/api/auth/verify-email)"
+          if [[ "$status" != "200" ]]; then
+            cat "$RUNNER_TEMP/verify-response.json"
+            echo "Email verification expected HTTP 200, got $status."
+            exit 1
+          fi
+          jq -e '.verified == true' "$RUNNER_TEMP/verify-response.json" > /dev/null
+
+          echo "Logging in and starting real video analysis (both Ollama models, no AI mocks)..."
+          jq -n --arg email "$email" --arg password "$password" \
+            '{email:$email,password:$password}' > "$RUNNER_TEMP/login-request.json"
+          status="$(curl -sS -o "$RUNNER_TEMP/login-response.json" -w '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            --data @"$RUNNER_TEMP/login-request.json" \
+            http://localhost:8080/api/auth/login)"
+          if [[ "$status" != "200" ]]; then
+            cat "$RUNNER_TEMP/login-response.json"
+            echo "Login expected HTTP 200, got $status."
+            exit 1
+          fi
+          token="$(jq -r '.token // empty' "$RUNNER_TEMP/login-response.json")"
+          if [[ -z "$token" ]]; then
+            echo "Login response did not contain a JWT."
+            exit 1
+          fi
+
+          status="$(curl --max-time 2400 -sS -o "$RUNNER_TEMP/analysis-response.json" -w '%{http_code}' \
+            -H "Authorization: Bearer $token" \
+            -F "file=@$video;type=video/mp4" \
+            -F 'sportId=2' -F 'skillId=3' \
+            http://localhost:8080/api/analyses)"
+          if [[ "$status" != "201" ]]; then
+            cat "$RUNNER_TEMP/analysis-response.json"
+            "${compose[@]}" logs --no-color --tail=200 backend ollama
+            echo "Real analysis expected HTTP 201, got $status."
+            exit 1
+          fi
+          jq -e '(.id != null) and ((.scores | length) > 0) and (.goodPoints != null) and (.badPoints != null) and (.improvements != null)' \
+            "$RUNNER_TEMP/analysis-response.json" > /dev/null
+          analysis_id="$(jq -r '.id' "$RUNNER_TEMP/analysis-response.json")"
+
+          curl --fail --silent --show-error -H "Authorization: Bearer $token" \
+            "http://localhost:8080/api/analyses/$analysis_id" -o "$RUNNER_TEMP/history-response.json"
+          jq -e '(.id != null) and ((.scores | length) > 0)' "$RUNNER_TEMP/history-response.json" > /dev/null
+
+          {
+            echo "## SportIQ real-model end-to-end result"
+            echo "- PostgreSQL and application containers started."
+            echo "- Both Ollama models downloaded and listed successfully."
+            echo "- Registration sent an OTP through SMTP; Mailpit received it."
+            echo "- OTP verification and JWT login succeeded."
+            echo "- Real video analysis returned HTTP 201 with scores and coaching feedback."
+            echo "- Saved analysis was readable from history."
+            echo "- Analysis ID: `$analysis_id`."
+            echo
+            echo "This validates app-to-SMTP delivery to the test inbox. It does not prove delivery to an external Gmail/personal inbox."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Full E2E passed: SMTP OTP, verification, login, real Ollama analysis and history."
+
+  external-smtp-probe:
+    name: Optional external SMTP credential and send check
+    if: ${{ inputs.send_external_smtp_probe == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send test message to the configured inbox
+        env:
+          SMTP_HOST: ${{ secrets.SPORTIQ_E2E_SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SPORTIQ_E2E_SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SPORTIQ_E2E_SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SPORTIQ_E2E_SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SPORTIQ_E2E_SMTP_FROM }}
+          SMTP_TO: ${{ inputs.external_test_recipient }}
+        run: |
+          set -euo pipefail
+          for key in SMTP_HOST SMTP_PORT SMTP_USERNAME SMTP_PASSWORD SMTP_FROM SMTP_TO; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "Missing required setting: $key (configure the corresponding GitHub secret or workflow input)."
+              exit 1
+            fi
+          done
+          python - <<'PY'
+          import os
+          import smtplib
+          import ssl
+          from email.message import EmailMessage
+
+          host = os.environ["SMTP_HOST"]
+          port = int(os.environ["SMTP_PORT"])
+          username = os.environ["SMTP_USERNAME"]
+          password = os.environ["SMTP_PASSWORD"]
+          sender = os.environ["SMTP_FROM"]
+          recipient = os.environ["SMTP_TO"]
+
+          message = EmailMessage()
+          message["Subject"] = "SportIQ external SMTP delivery check"
+          message["From"] = sender
+          message["To"] = recipient
+          message.set_content(
+              "This test message was sent by SportIQ's GitHub Actions SMTP check. "
+              "Please confirm that it arrived in your inbox."
+          )
+
+          if port == 465:
+              client = smtplib.SMTP_SSL(host, port, timeout=30, context=ssl.create_default_context())
+          else:
+              client = smtplib.SMTP(host, port, timeout=30)
+          with client as smtp:
+              smtp.ehlo()
+              if port != 465:
+                  smtp.starttls(context=ssl.create_default_context())
+                  smtp.ehlo()
+              smtp.login(username, password)
+              smtp.send_message(message)
+          print("SMTP server accepted the test message. Check the configured recipient inbox to confirm final delivery.")
+          PY
+          {
+            echo "## External SMTP probe"
+            echo "The configured SMTP server accepted a test message addressed to the workflow input recipient."
+            echo "Please confirm it arrived in the inbox; SMTP acceptance alone is not proof of final mailbox delivery."
+          } >> "$GITHUB_STEP_SUMMARY"
