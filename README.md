@@ -39,7 +39,7 @@ docker compose ps
 docker compose logs -f ollama-setup backend frontend
 ```
 
-The first start downloads the AI models and can take a while. Wait for `ollama-setup` to finish successfully and for the backend to finish starting.
+The first start downloads the AI models and can take a while. The setup container must finish with `MODELS_READY`, then the backend and frontend should start.
 
 - Frontend: http://localhost:4200
 - Backend API (direct): http://localhost:8080
@@ -86,7 +86,9 @@ An HTTP response alone does not validate AI quality; the successful upload and a
 
 ## Automated verification
 
-A GitHub Actions workflow in `.github/workflows/runtime-verification.yml` runs on pushes and pull requests to `main`. It runs the backend Maven test suite (including PostgreSQL-backed tests where configured), builds the production frontend, runs Angular tests, and builds both Docker images. The end-to-end backend tests mock the Ollama calls, so they validate API integration but do not replace the real-model upload smoke test above.
+The GitHub Actions workflow in `.github/workflows/runtime-verification.yml` runs on pushes and pull requests to `main`. It runs backend Maven tests (including PostgreSQL-backed tests), builds the production frontend, runs Angular unit tests, and launches the Docker Compose stack to verify that the UI returns HTTP 200 and that the protected backend/API proxy return the expected HTTP 401 for anonymous calls. The CI Compose override deliberately skips downloading the AI models, so the CI runtime smoke validates container startup and routing, not real-model inference.
+
+A real video-analysis run still needs to be performed locally with the models downloaded. The backend end-to-end tests mock Ollama calls, so they validate API integration but do not establish AI analysis quality.
 
 Locally, backend tests require Java 21, Maven and FFmpeg; PostgreSQL integration tests use Testcontainers and therefore need Docker. Frontend commands:
 
