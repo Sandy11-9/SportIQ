@@ -66,28 +66,55 @@ jobs:
         working-directory: frontend
         run: npm test -- --watch=false --browsers=ChromeHeadlessCI
 
-  docker-build:
-    name: Build deployment images
+  compose-runtime-smoke:
+    name: Docker Compose runtime smoke test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     needs: [backend-tests, frontend]
+    env:
+      # Ephemeral CI-only value. Never use this outside automated tests.
+      SPORTIQ_JWT_SECRET: sportiq-ci-only-secret-not-for-deployment-0123456789
+      SPRING_MAIL_USERNAME: ''
+      SPRING_MAIL_PASSWORD: ''
+      SPRING_MAIL_FROM: noreply@localhost
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Start containers and smoke-test app plus API proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          compose=(docker compose -f docker-compose.yml -f docker-compose.ci.yml)
+          cleanup() {
+            "${compose[@]}" logs --no-color --tail=150 backend frontend postgres ollama ollama-setup || true
+            "${compose[@]}" down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
 
-      - name: Build backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          push: false
-          tags: sportiq-backend:ci
+          "${compose[@]}" up --build -d
 
-      - name: Build frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          push: false
-          tags: sportiq-frontend:ci
+          backend_status=""
+          for attempt in $(seq 1 90); do
+            backend_status="$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/api/sports || true)"
+            if [ "$backend_status" = "401" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$backend_status" != "401" ]; then
+            echo "Backend did not reach the expected protected-endpoint response (HTTP 401); got: $backend_status"
+            "${compose[@]}" ps -a
+            exit 1
+          fi
+
+          curl --fail --silent --show-error http://localhost:4200/ -o /dev/null
+
+          proxy_status="$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:4200/api/sports || true)"
+          if [ "$proxy_status" != "401" ]; then
+            echo "Frontend Nginx API proxy expected HTTP 401, got: $proxy_status"
+            exit 1
+          fi
+
+          echo "Compose runtime smoke passed: backend started, frontend returned HTTP 200, API proxy reached the protected backend."
