@@ -1,0 +1,20 @@
+services:
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+
+  backend:
+    environment:
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_FROM: sportiq-ci@localhost
+      # Keep the real model call but sample one frame in the CI clip, which
+      # shortens CPU inference time. Real product default stays at 1.5 fps.
+      JAVA_TOOL_OPTIONS: "-Dsportiq.media.frames-per-second=0.2 -Dsportiq.ai.budget-ms=1200000"
+    depends_on:
+      mailpit:
+        condition: service_started
