@@ -46,6 +46,10 @@ services:
     build: ./backend
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SPORTIQ_JWT_SECRET: ${SPORTIQ_JWT_SECRET:?Set SPORTIQ_JWT_SECRET in your .env file}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_FROM: ${SPRING_MAIL_FROM:-noreply@localhost}
     depends_on:
       postgres:
         condition: service_healthy
