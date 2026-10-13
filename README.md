@@ -15,7 +15,7 @@ SportIQ is a full-stack sports coaching application. The Angular frontend talks 
 
 - Docker Desktop with Docker Compose v2
 - At least 8 GB RAM available to Docker; more memory and disk space help with local AI models
-- For registration/email verification: an SMTP account and an app password (optional until you test sign-up)
+- For real email verification: an SMTP account and app password
 
 ## Configure secrets
 
@@ -26,7 +26,7 @@ SportIQ is a full-stack sports coaching application. The Angular frontend talks 
    [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
    ```
 
-3. For email verification, set `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` and `SPRING_MAIL_FROM` in `.env`. Use a provider app password, not your normal account password.
+3. Set `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` and `SPRING_MAIL_FROM` in `.env` for real email delivery. You can adjust `SPRING_MAIL_HOST` and `SPRING_MAIL_PORT` for your provider. Use a provider app password, not your normal account password.
 4. Never commit `.env` or share its contents. If a credential was ever committed to Git, revoke/rotate it; deleting it from the latest file does not remove it from Git history.
 
 ## Run the full application
@@ -53,44 +53,48 @@ docker compose down
 
 To preserve downloaded models and database data, keep the named volumes. To remove the app's data and downloaded models too, use `docker compose down -v`.
 
-## Runtime smoke test
+## Runtime and real AI smoke test
 
-After startup, run in PowerShell:
+After startup, use PowerShell to confirm the UI returns HTTP 200 and the protected API returns HTTP 401 before logging in:
 
 ```powershell
-# The UI should return HTTP 200.
 (Invoke-WebRequest http://localhost:4200 -UseBasicParsing).StatusCode
-
-# This protected endpoint should respond with HTTP 401 when no token is supplied.
 try {
   (Invoke-WebRequest http://localhost:8080/api/sports -UseBasicParsing).StatusCode
 } catch {
   [int]$_.Exception.Response.StatusCode
 }
-
-# All core containers should be running; ollama-setup should have exited successfully.
 docker compose ps -a
 ```
 
-Then verify an actual user flow in the browser:
+Then verify the actual product flow in the browser:
 
-1. Register using an email inbox you can access and confirm the OTP arrives.
+1. Register with an email inbox you can access. Confirm the OTP message arrives from the SMTP provider, and enter the code.
 2. Log in and open the sports/skills catalog.
-3. Upload a playable MP4 video between 5 and 20 seconds (maximum 50 MB) for one of the skills listed by the app.
-4. Wait for analysis and verify scores, strengths, weaknesses and recommendations appear.
+3. Upload a playable MP4 between 5 and 20 seconds (maximum 50 MB) for a skill compatible with the clip.
+4. Wait for analysis and confirm real model-generated scores, strengths, weaknesses and recommendations appear.
 5. Open history, view the saved analysis, and refresh the page.
-6. Open the chatbot and diet-advice/calculator features.
-7. Run the upload again and inspect `docker compose logs backend ollama` if processing fails.
+6. Open chatbot and diet-advice/calculator features.
+7. Inspect `docker compose logs backend ollama` if processing fails.
 
-An HTTP response alone does not validate AI quality; the successful upload and analysis flow is required for that. Test with a video you have permission to use.
+An HTTP health response or mocked test alone does not validate model inference. A successful upload that runs through both Ollama models is required.
 
 ## Automated verification
 
-The GitHub Actions workflow in `.github/workflows/runtime-verification.yml` runs on pushes and pull requests to `main`. It runs backend Maven tests (including PostgreSQL-backed tests), builds the production frontend, runs Angular unit tests, and launches the Docker Compose stack to verify that the UI returns HTTP 200 and that the protected backend/API proxy return the expected HTTP 401 for anonymous calls. The CI Compose override deliberately skips downloading the AI models, so the CI runtime smoke validates container startup and routing, not real-model inference.
+The GitHub Actions workflow in `.github/workflows/runtime-verification.yml` runs on pushes and pull requests to `main`. It runs the backend Maven suite, production frontend build and Angular tests, then starts a Compose stack to verify container startup, HTTP routing and the Nginx API proxy. Its lightweight Compose override intentionally skips model downloads, so it does not prove real AI analysis.
 
-A real video-analysis run still needs to be performed locally with the models downloaded. The backend end-to-end tests mock Ollama calls, so they validate API integration but do not establish AI analysis quality.
+The separate `.github/workflows/full-e2e.yml` workflow is an expensive, real-model test. It downloads `moondream` and `phi4-mini`, starts the actual Dockerized application, routes the application SMTP client to a temporary Mailpit SMTP inbox, retrieves the verification OTP from that inbox, verifies a new account, logs in, uploads the repository's demo video, and checks the returned analysis and history. This proves the app sends and receives the OTP through an SMTP server and completes a real Ollama analysis. Mailpit is a test inbox; this workflow does **not** prove delivery through your personal Gmail/SMTP provider. To verify external delivery, use the real SMTP settings in `.env` and confirm the OTP lands in an inbox you control.
 
-Locally, backend tests require Java 21, Maven and FFmpeg; PostgreSQL integration tests use Testcontainers and therefore need Docker. Frontend commands:
+## Local tests
+
+Backend tests require Java 21, Maven, FFmpeg and Docker for PostgreSQL Testcontainers:
+
+```powershell
+cd backend
+mvn test
+```
+
+Frontend build and unit tests:
 
 ```powershell
 cd frontend
@@ -99,13 +103,6 @@ npm run build
 npm test -- --watch=false --browsers=ChromeHeadlessCI
 ```
 
-Backend commands:
-
-```powershell
-cd backend
-mvn test
-```
-
 ## Important security note
 
-Never put SMTP passwords, production JWT secrets, or other credentials in tracked configuration. Configure secrets through environment variables. If the previously committed SMTP credential is genuine, revoke it with the email provider immediately and replace it in your local `.env`.
+Never put SMTP passwords, production JWT secrets, or other credentials in tracked configuration. Configure secrets through environment variables. If the previously committed SMTP credential is genuine, revoke it with the email provider immediately; the current configuration no longer contains it, but old Git history may still.
