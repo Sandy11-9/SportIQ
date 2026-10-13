@@ -1,0 +1,8 @@
+services:
+  # Keep the Ollama server container in the test stack, but skip multi-GB
+  # model downloads. Real-model inference is verified separately by the manual
+  # upload smoke test in README.md.
+  ollama-setup:
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "echo MODELS_READY; echo 'Model pulls skipped in CI runtime smoke test'"
