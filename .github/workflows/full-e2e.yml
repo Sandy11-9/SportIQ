@@ -1,3 +1,4 @@
+# Temporary verification branch: runs this costly workflow only on explicit pushes here.
 name: Full E2E - Real Ollama and SMTP
 
 on:
