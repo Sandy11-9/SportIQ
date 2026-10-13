@@ -9,6 +9,8 @@ describe('AuthService', () => {
   let tokenService: TokenService;
 
   beforeEach(() => {
+    // Browser localStorage survives between Jasmine specs; begin from a clean auth state.
+    localStorage.clear();
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [TokenService],
