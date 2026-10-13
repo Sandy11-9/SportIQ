@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { AppComponent } from './app.component';
 import { TokenService } from './core/token.service';
@@ -6,7 +7,7 @@ import { TokenService } from './core/token.service';
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent],
+      imports: [HttpClientTestingModule, AppComponent],
       providers: [
         provideRouter([]),
         TokenService,
