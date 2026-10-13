@@ -37,12 +37,7 @@ jobs:
 
       - name: Run backend test suite
         working-directory: backend
-        env:
-          SPRING_MAIL_USERNAME: ''
-          SPRING_MAIL_PASSWORD: ''
-          SPORTIQ_JWT_SECRET: ${{ secrets.SPORTIQ_CI_JWT_SECRET }}
-        run: |
-          mvn --batch-mode --no-transfer-progress test
+        run: mvn --batch-mode --no-transfer-progress test
 
   frontend:
     name: Frontend build and unit tests
@@ -69,7 +64,7 @@ jobs:
 
       - name: Run Angular unit tests
         working-directory: frontend
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+        run: npm test -- --watch=false --browsers=ChromeHeadlessCI
 
   docker-build:
     name: Build deployment images
