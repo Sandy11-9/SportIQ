@@ -18,8 +18,8 @@ spring:
       base-url: http://localhost:11434
   mail:
     # Set credentials through environment variables; never commit real secrets.
-    host: smtp.gmail.com
-    port: 587
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
     username: ${SPRING_MAIL_USERNAME:}
     password: ${SPRING_MAIL_PASSWORD:}
     from: ${SPRING_MAIL_FROM:noreply@localhost}
