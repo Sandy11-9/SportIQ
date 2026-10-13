@@ -28,15 +28,13 @@ services:
 
   ollama-setup:
     image: ollama/ollama:latest
+    # The Ollama image entrypoint is /bin/ollama, not a shell.
+    # Override it so this service can run the model-download shell script.
+    entrypoint: ["/bin/sh", "-c"]
     environment:
       OLLAMA_HOST: http://ollama:11434
-    command: >
-      sh -c "
-      until ollama list > /dev/null 2>&1; do sleep 2; done &&
-      ollama pull moondream &&
-      ollama pull phi4-mini &&
-      echo MODELS_READY
-      "
+    command:
+      - 'until ollama list >/dev/null 2>&1; do sleep 2; done && ollama pull moondream && ollama pull phi4-mini && echo MODELS_READY'
     depends_on:
       ollama:
         condition: service_healthy
